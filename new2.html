@@ -1,0 +1,1211 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>CHESS APP FOR BLINDS</title>
+    <style>
+      :root {
+        --bg: #111;
+        --panel: #0f0f0f;
+        --white-square: #f0d9b5;
+        --black-square: #b58863;
+      }
+      body {
+        margin: 0;
+        min-height: 100vh;
+        background: var(--bg);
+        color: #fff;
+        font-family: Arial, sans-serif;
+        display: flex;
+        justify-content: center;
+        align-items: flex-start;
+        padding: 20px;
+        gap: 24px;
+      }
+      #container {
+        width: 640px;
+        position: relative;
+      }
+      #board {
+        width: 640px;
+        height: 640px;
+        display: grid;
+        grid-template-columns: repeat(8, 1fr);
+        grid-template-rows: repeat(8, 1fr);
+        border: 4px solid #333;
+        position: relative;
+      }
+      .square {
+        width: 100%;
+        height: 100%;
+        display: flex;
+        justify-content: center;
+        align-items: center;
+        font-size: 48px;
+        cursor: pointer;
+        position: relative;
+        transition: background 0.08s, box-shadow 0.2s;
+      }
+      .square.white {
+        background: var(--white-square);
+      }
+      .square.black {
+        background: var(--black-square);
+      }
+      .square .piece {
+        pointer-events: none;
+        line-height: 1;
+        text-shadow: 0 0 2px rgba(0, 0, 0, 0.6);
+      }
+      .piece.white {
+        color: #fff;
+        text-shadow: 0 0 3px rgba(0, 0, 0, 0.9);
+      }
+      .piece.black {
+        color: #000;
+        text-shadow: 0 0 2px rgba(255, 255, 255, 0.6);
+      }
+      .last-move {
+        outline: 4px solid rgba(255, 215, 0, 0.95);
+        outline-offset: -4px;
+      }
+      .highlight {
+        outline: 2px solid #0f0;
+      }
+      .current-square {
+        box-shadow: inset 0 0 0 4px #ff0000;
+      }
+
+      .rank-label,
+      .file-label {
+        position: absolute;
+        font-size: 16px;
+        font-weight: bold;
+        color: #333;
+        pointer-events: none;
+        user-select: none;
+      }
+      .rank-label {
+        left: -20px;
+      }
+      .file-label {
+        bottom: -20px;
+      }
+
+      #controls {
+        width: 320px;
+        background: var(--panel);
+        border-radius: 8px;
+        padding: 18px;
+        display: flex;
+        flex-direction: column;
+        gap: 12px;
+        box-shadow: 0 6px 18px rgba(0, 0, 0, 0.6);
+      }
+      button,
+      select {
+        padding: 12px 14px;
+        font-size: 16px;
+        border-radius: 8px;
+        border: none;
+        cursor: pointer;
+      }
+      button:active {
+        transform: translateY(1px);
+      }
+      #startBtn {
+        background: #0a84ff;
+        color: white;
+      }
+      #stopBtn {
+        background: #6c757d;
+        color: white;
+      }
+      #resetBtn {
+        background: #dc3545;
+        color: white;
+      }
+      #undoBtn {
+        background: #ffc107;
+        color: black;
+      }
+      #tutorialBtn {
+        background: #28a745;
+        color: white;
+      }
+      #aiBtn {
+        background: #6610f2;
+        color: white;
+      }
+      #exploreBtn {
+        background: #17a2b8;
+        color: white;
+      }
+      #analyzeBtn {
+        background: #6f42c1;
+        color: white;
+      }
+      #saveBtn, #loadBtn {
+        background: #fd7e14;
+        color: white;
+      }
+      #status {
+        font-weight: 700;
+        margin-top: 8px;
+      }
+      #timer {
+        font-size: 18px;
+        margin-top: 8px;
+        font-weight: 700;
+      }
+      .row {
+        display: flex;
+        gap: 8px;
+        align-items: center;
+      }
+      
+      /* New styles for move history panel */
+      #moveHistoryContainer {
+        margin-top: 12px;
+        max-height: 200px;
+        overflow-y: auto;
+        background: rgba(255, 255, 255, 0.05);
+        border-radius: 6px;
+        padding: 8px;
+      }
+      #moveHistory {
+        display: flex;
+        flex-direction: column;
+        gap: 4px;
+        font-size: 14px;
+      }
+      .move-row {
+        display: flex;
+        justify-content: space-between;
+        padding: 4px 0;
+        border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+      }
+      .move-number {
+        font-weight: bold;
+        margin-right: 8px;
+        width: 30px;
+      }
+      .white-move, .black-move {
+        flex: 1;
+        padding: 2px 6px;
+        border-radius: 4px;
+      }
+      .white-move {
+        background: rgba(255, 255, 255, 0.1);
+      }
+      .black-move {
+        background: rgba(0, 0, 0, 0.2);
+      }
+      #moveHistoryTitle {
+        font-weight: bold;
+        margin-bottom: 8px;
+        text-align: center;
+      }
+      
+      /* Additional controls */
+      #additionalControls {
+        display: flex;
+        flex-direction: column;
+        gap: 8px;
+        margin-top: 12px;
+      }
+      #languageSelect, #difficultySelect {
+        width: 100%;
+      }
+      #keyboardHelp {
+        background: rgba(255, 255, 255, 0.1);
+        border-radius: 6px;
+        padding: 8px;
+        margin-top: 12px;
+        font-size: 12px;
+      }
+      
+      @media (max-width: 980px) {
+        body {
+          flex-direction: column;
+          align-items: center;
+          padding: 12px;
+        }
+        #controls,
+        #container {
+          width: 100%;
+          max-width: 640px;
+        }
+        #board {
+          width: 100%;
+          height: 100%;
+          aspect-ratio: 1/1;
+        }
+      }
+    </style>
+  </head>
+
+  <body>
+    <div id="container">
+      <div id="board" role="grid" aria-label="Chess board"></div>
+    </div>
+
+    <div id="controls">
+      <div class="row">
+        <button id="startBtn">Start Voice</button>
+        <button id="stopBtn">Stop Voice</button>
+      </div>
+
+      <div class="row">
+        <button id="resetBtn">Reset</button>
+        <button id="undoBtn">Undo</button>
+      </div>
+
+      <div class="row">
+        <button id="tutorialBtn">Tutorial Mode</button>
+        <button id="aiBtn">AI Opponent</button>
+      </div>
+
+      <div class="row">
+        <select id="themeSelect">
+          <option value="classic">Classic</option>
+          <option value="dark">Dark</option>
+          <option value="neon">Neon</option>
+          <option value="blue">Blue</option>
+          <option value="green">Green</option>
+          <option value="red">Red</option>
+        </select>
+
+        <select id="timeSelect">
+          <option value="300">5 | 5</option>
+          <option value="180">3 | 3</option>
+          <option value="600">10 | 10</option>
+        </select>
+      </div>
+
+      <div class="row">
+        <button id="exploreBtn">Explore Mode</button>
+        <button id="analyzeBtn">Analyze</button>
+      </div>
+
+      <div class="row">
+        <button id="saveBtn">Save Game</button>
+        <button id="loadBtn">Load Game</button>
+      </div>
+
+      <div id="additionalControls">
+        <select id="difficultySelect">
+          <option value="beginner">Beginner</option>
+          <option value="intermediate" selected>Intermediate</option>
+          <option value="advanced">Advanced</option>
+          <option value="expert">Expert</option>
+        </select>
+      </div>
+
+      <div id="status">Status: Ready</div>
+      <div id="timer">⏱ White: 05:00 | Black: 05:00</div>
+      
+      <!-- New move history section -->
+      <div id="moveHistoryContainer">
+        <div id="moveHistoryTitle">Move History</div>
+        <div id="moveHistory"></div>
+      </div>
+      
+      <div id="keyboardHelp">
+        <strong>Keyboard Controls:</strong><br>
+        Arrow keys: Navigate board<br>
+        Enter: Select square<br>
+        Escape: Cancel selection<br>
+        Space: Describe current square<br>
+        A: Analyze position<br>
+        T: Toggle tutorial mode<br>
+        S: Save game<br>
+        L: Load game
+      </div>
+    </div>
+
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/chess.js/0.10.3/chess.min.js"></script>
+    <script>
+      // ----------------- ELEMENTS -----------------
+      const boardEl = document.getElementById('board');
+      const statusEl = document.getElementById('status');
+      const timerEl = document.getElementById('timer');
+      const startBtn = document.getElementById('startBtn');
+      const stopBtn = document.getElementById('stopBtn');
+      const resetBtn = document.getElementById('resetBtn');
+      const undoBtn = document.getElementById('undoBtn');
+      const tutorialBtn = document.getElementById('tutorialBtn');
+      const aiBtn = document.getElementById('aiBtn');
+      const exploreBtn = document.getElementById('exploreBtn');
+      const analyzeBtn = document.getElementById('analyzeBtn');
+      const saveBtn = document.getElementById('saveBtn');
+      const loadBtn = document.getElementById('loadBtn');
+      const themeSelect = document.getElementById('themeSelect');
+      const timeSelect = document.getElementById('timeSelect');
+      const difficultySelect = document.getElementById('difficultySelect');
+      const moveHistoryEl = document.getElementById('moveHistory');
+
+      // ----------------- GAME STATE -----------------
+      const game = new Chess();
+      let selectedSquare = null, lastMove = null;
+      let tutorialMode = false, aiMode = false, exploreMode = false;
+      let currentSquare = 'a1'; // For keyboard navigation
+      const pieces = {
+        p: "♟", r: "♜", n: "♞", b: "♝", q: "♛", k: "♚",
+        P: "♙", R: "♖", N: "♘", B: "♗", Q: "♕", K: "♔"
+      };
+
+      let initialSeconds = parseInt(timeSelect.value, 10) || 300;
+      let whiteTime = initialSeconds, blackTime = initialSeconds, timerInterval = null;
+      let moveHistory = []; // Store move history for display
+      
+      // Statistics tracking
+      const statistics = {
+        gamesPlayed: parseInt(localStorage.getItem('chessGamesPlayed')) || 0,
+        wins: JSON.parse(localStorage.getItem('chessWins')) || { white: 0, black: 0, draws: 0 },
+        bestMoves: JSON.parse(localStorage.getItem('chessBestMoves')) || []
+      };
+
+      // ----------------- MULTI-LANGUAGE SUPPORT -----------------
+      const languages = {
+        en: {
+          check: "Check",
+          checkmate: "Checkmate",
+          white: "White",
+          black: "Black",
+          ready: "Ready",
+          status: "Status",
+          turn: "Turn",
+          wins: "wins",
+          draw: "Draw",
+          voiceOn: "Voice ON",
+          voiceOff: "Voice OFF",
+          tutorialOn: "Tutorial Mode ON",
+          tutorialOff: "Tutorial Mode OFF",
+          aiOn: "AI Opponent ON",
+          aiOff: "AI Opponent OFF",
+          exploreOn: "Explore Mode ON",
+          exploreOff: "Explore Mode OFF",
+          invalidMove: "Invalid move",
+          noMoveToUndo: "No move to undo",
+          undidMove: "Undid last move",
+          gameSaved: "Game saved successfully",
+          gameLoaded: "Game loaded",
+          noSavedGame: "No saved game found",
+          whiteWins: "White wins",
+          blackWins: "Black wins",
+          timeOut: "lost on time",
+          pieceNames: {
+            'p': 'pawn', 'r': 'rook', 'n': 'knight', 'b': 'bishop', 'q': 'queen', 'k': 'king'
+          },
+          promotionPieces: {
+            'q': 'queen', 'r': 'rook', 'b': 'bishop', 'n': 'knight'
+          }
+        }
+      };
+      
+      let currentLanguage = 'en';
+
+      // ----------------- AI DIFFICULTY LEVELS -----------------
+      const aiLevels = {
+        beginner: { depth: 1, name: "Beginner" },
+        intermediate: { depth: 2, name: "Intermediate" },
+        advanced: { depth: 3, name: "Advanced" },
+        expert: { depth: 4, name: "Expert" }
+      };
+      
+      let currentAILevel = aiLevels.intermediate;
+
+      // ----------------- SOUNDS -----------------
+      const moveSound = new Audio('https://freesound.org/data/previews/341/341695_5260876-lq.mp3');
+      const captureSound = new Audio('https://freesound.org/data/previews/316/316847_4939433-lq.mp3');
+      const checkSound = new Audio('https://freesound.org/data/previews/331/331912_3248244-lq.mp3');
+      const checkmateSound = new Audio('https://freesound.org/data/previews/399/399869_5121236-lq.mp3');
+      const drawSound = new Audio('https://freesound.org/data/previews/256/256113_3263906-lq.mp3');
+
+      function speak(text) {
+        if ('speechSynthesis' in window) {
+          const u = new SpeechSynthesisUtterance(text);
+          u.lang = 'en-US';
+          speechSynthesis.speak(u);
+        }
+      }
+
+      function playMoveSound(move) {
+        if (game.in_checkmate()) {
+          checkmateSound.play();
+          speak(languages[currentLanguage].checkmate);
+        } else if (game.in_check()) {
+          checkSound.play();
+          speak(languages[currentLanguage].check);
+        } else if (move && move.captured) {
+          captureSound.play();
+        } else {
+          moveSound.play();
+        }
+      }
+
+      // ----------------- MOVE DICTATION -----------------
+      function announceMove(move, color) {
+        const lang = languages[currentLanguage];
+        let announcement = `${color === 'w' ? lang.white : lang.black} moved `;
+        
+        // Handle castling
+        if (move.san === 'O-O') {
+          announcement += "kingside castling";
+        } else if (move.san === 'O-O-O') {
+          announcement += "queenside castling";
+        } else {
+          // Handle piece names
+          if (move.piece !== 'p') {
+            announcement += lang.pieceNames[move.piece] + " ";
+          }
+          
+          // Handle captures
+          if (move.captured) {
+            announcement += `captures `;
+          }
+          
+          // Handle destination
+          announcement += move.to;
+          
+          // Handle promotion
+          if (move.promotion) {
+            announcement += ` promoting to ${lang.promotionPieces[move.promotion]}`;
+          }
+        }
+        
+        // Handle check and checkmate
+        if (game.in_checkmate()) {
+          announcement += `. ${lang.checkmate}!`;
+        } else if (game.in_check()) {
+          announcement += `. ${lang.check}!`;
+        }
+        
+        speak(announcement);
+      }
+
+      // ----------------- MOVE HISTORY -----------------
+      function updateMoveHistory() {
+        moveHistoryEl.innerHTML = '';
+        
+        // Group moves by turn (white and black pairs)
+        const movePairs = [];
+        for (let i = 0; i < moveHistory.length; i += 2) {
+          movePairs.push({
+            white: moveHistory[i],
+            black: moveHistory[i+1] || null
+          });
+        }
+        
+        // Create rows for each move pair
+        movePairs.forEach((pair, index) => {
+          const moveNumber = index + 1;
+          const row = document.createElement('div');
+          row.className = 'move-row';
+          
+          const numberSpan = document.createElement('span');
+          numberSpan.className = 'move-number';
+          numberSpan.textContent = `${moveNumber}.`;
+          row.appendChild(numberSpan);
+          
+          const whiteMoveSpan = document.createElement('span');
+          whiteMoveSpan.className = 'white-move';
+          whiteMoveSpan.textContent = pair.white;
+          row.appendChild(whiteMoveSpan);
+          
+          if (pair.black) {
+            const blackMoveSpan = document.createElement('span');
+            blackMoveSpan.className = 'black-move';
+            blackMoveSpan.textContent = pair.black;
+            row.appendChild(blackMoveSpan);
+          }
+          
+          moveHistoryEl.appendChild(row);
+        });
+        
+        // Scroll to the bottom
+        moveHistoryEl.scrollTop = moveHistoryEl.scrollHeight;
+      }
+
+      // ----------------- TIMERS -----------------
+      function formatTime(sec) {
+        sec = Math.max(0, Math.floor(sec));
+        const m = String(Math.floor(sec / 60)).padStart(2, '0');
+        const s = String(sec % 60).padStart(2, '0');
+        return `${m}:${s}`;
+      }
+      function updateTimerText() {
+        timerEl.textContent = `⏱ ${languages[currentLanguage].white}: ${formatTime(whiteTime)} | ${languages[currentLanguage].black}: ${formatTime(blackTime)}`;
+      }
+      function startTimerIfNeeded() {
+        if (!timerInterval) timerInterval = setInterval(timerTick, 1000);
+      }
+      function stopTimer() {
+        if (timerInterval) {
+          clearInterval(timerInterval);
+          timerInterval = null;
+        }
+      }
+      function timerTick() {
+        if (game.game_over()) { stopTimer(); return; }
+        if (game.turn() === 'w') {
+          whiteTime--;
+          if (whiteTime <= 0) { 
+            whiteTime = 0; 
+            updateStatus(`${languages[currentLanguage].white} ${languages[currentLanguage].timeOut}`); 
+            statistics.wins.black++;
+            updateStatistics();
+            stopTimer(); 
+          }
+        } else {
+          blackTime--;
+          if (blackTime <= 0) { 
+            blackTime = 0; 
+            updateStatus(`${languages[currentLanguage].black} ${languages[currentLanguage].timeOut}`); 
+            statistics.wins.white++;
+            updateStatistics();
+            stopTimer(); 
+          }
+        }
+        updateTimerText();
+      }
+
+      // ----------------- BOARD RENDER -----------------
+      function drawBoard() {
+        boardEl.innerHTML = "";
+        const files = "abcdefgh";
+        // file labels
+        for (let f = 0; f < 8; f++) {
+          const fileLabel = document.createElement('div');
+          fileLabel.classList.add('file-label');
+          fileLabel.textContent = files[f];
+          fileLabel.style.left = `${(f * 80) + 32}px`;
+          fileLabel.style.bottom = `-20px`;
+          boardEl.appendChild(fileLabel);
+        }
+        // rank labels
+        for (let r = 0; r < 8; r++) {
+          const rankLabel = document.createElement('div');
+          rankLabel.classList.add('rank-label');
+          rankLabel.textContent = 8 - r;
+          rankLabel.style.top = `${(r * 80) + 32}px`;
+          rankLabel.style.left = `-20px`;
+          boardEl.appendChild(rankLabel);
+        }
+
+        const board = game.board();
+        for (let r = 0; r < 8; r++) {
+          for (let f = 0; f < 8; f++) {
+            const sq = "abcdefgh"[f] + (8 - r);
+            const squareDiv = document.createElement('div');
+            squareDiv.classList.add('square', ((r + f) % 2 === 0) ? 'white' : 'black');
+            squareDiv.dataset.square = sq;
+            squareDiv.setAttribute('role', 'gridcell');
+            
+            // Add ARIA label for screen readers
+            const piece = board[r][f];
+            let ariaLabel = `Square ${sq}, ${((r + f) % 2 === 0) ? 'white' : 'black'} square`;
+            if (piece) {
+              ariaLabel += `, ${piece.color === 'w' ? 'white' : 'black'} ${languages[currentLanguage].pieceNames[piece.type]}`;
+            } else {
+              ariaLabel += ', empty';
+            }
+            squareDiv.setAttribute('aria-label', ariaLabel);
+
+            if (piece) {
+              const glyph = pieces[piece.color === 'w' ? piece.type.toUpperCase() : piece.type.toLowerCase()];
+              const pieceSpan = document.createElement('div');
+              pieceSpan.classList.add('piece', piece.color === 'w' ? 'white' : 'black');
+              pieceSpan.textContent = glyph;
+              squareDiv.appendChild(pieceSpan);
+            }
+
+            if (lastMove && (sq === lastMove.from || sq === lastMove.to)) squareDiv.classList.add('last-move');
+            if (sq === currentSquare && exploreMode) squareDiv.classList.add('current-square');
+            squareDiv.addEventListener('click', () => onSquareClick(sq));
+            boardEl.appendChild(squareDiv);
+          }
+        }
+
+        if (tutorialMode && !game.game_over() && game.turn() === 'w') highlightLegalMovesForTutorial();
+      }
+
+      function clearHighlights() { 
+        document.querySelectorAll('.highlight').forEach(el => el.classList.remove('highlight')); 
+        document.querySelectorAll('.current-square').forEach(el => el.classList.remove('current-square'));
+      }
+      
+      function highlightCurrentSquare() {
+        document.querySelectorAll('.current-square').forEach(el => el.classList.remove('current-square'));
+        const currentEl = document.querySelector(`[data-square='${currentSquare}']`);
+        if (currentEl) currentEl.classList.add('current-square');
+      }
+      
+      function highlightMoves(moves) { 
+        clearHighlights(); 
+        moves.forEach(m => { 
+          const el = document.querySelector(`[data-square='${m}']`); 
+          if (el) el.classList.add('highlight'); 
+        }); 
+      }
+      
+      function highlightLegalMovesForTutorial() {
+        const moves = game.moves({ verbose: true });
+        const squares = moves.map(m => m.from);
+        squares.forEach(sq => { const el = document.querySelector(`[data-square='${sq}']`); if (el) el.classList.add('highlight'); });
+      }
+
+      // ----------------- KEYBOARD NAVIGATION -----------------
+      function navigateBoard(direction) {
+        const files = 'abcdefgh';
+        const ranks = '12345678';
+        let file = currentSquare[0];
+        let rank = parseInt(currentSquare[1]);
+        
+        if (direction === 'right') {
+          const nextFile = files[files.indexOf(file) + 1];
+          if (nextFile) currentSquare = nextFile + rank;
+        } else if (direction === 'left') {
+          const prevFile = files[files.indexOf(file) - 1];
+          if (prevFile) currentSquare = prevFile + rank;
+        } else if (direction === 'up') {
+          const nextRank = rank + 1;
+          if (nextRank <= 8) currentSquare = file + nextRank;
+        } else if (direction === 'down') {
+          const prevRank = rank - 1;
+          if (prevRank >= 1) currentSquare = file + prevRank;
+        }
+        
+        highlightCurrentSquare();
+        if (exploreMode) speakSquareInfo(currentSquare);
+      }
+      
+      function speakSquareInfo(square) {
+        const piece = game.get(square);
+        const lang = languages[currentLanguage];
+        let info = `Square ${square}, `;
+        info += piece ? `${piece.color === 'w' ? lang.white : lang.black} ${lang.pieceNames[piece.type]}` : 'empty';
+        speak(info);
+      }
+      
+      function handleKeyboardInput(event) {
+        if (event.key === 'ArrowRight') navigateBoard('right');
+        else if (event.key === 'ArrowLeft') navigateBoard('left');
+        else if (event.key === 'ArrowUp') navigateBoard('up');
+        else if (event.key === 'ArrowDown') navigateBoard('down');
+        else if (event.key === 'Enter' || event.key === ' ') {
+          if (event.key === ' ') {
+            speakSquareInfo(currentSquare);
+          } else {
+            onSquareClick(currentSquare);
+          }
+        } else if (event.key === 'Escape') {
+          selectedSquare = null;
+          clearHighlights();
+          speak("Selection cancelled");
+        } else if (event.key === 'a' || event.key === 'A') {
+          analyzePosition();
+        } else if (event.key === 't' || event.key === 'T') {
+          tutorialBtn.click();
+        } else if (event.key === 's' || event.key === 'S') {
+          saveGame();
+        } else if (event.key === 'l' || event.key === 'L') {
+          loadGame();
+        }
+      }
+
+      // ----------------- MOVE HANDLING -----------------
+      function tryMove(from, to) {
+        let move = null;
+        const king = game.get(from);
+        if (king && king.type === 'k') {
+          if (from === 'e1' && to === 'g1') move = game.move('O-O');
+          else if (from === 'e1' && to === 'c1') move = game.move('O-O-O');
+          else if (from === 'e8' && to === 'g8') move = game.move('O-O');
+          else if (from === 'e8' && to === 'c8') move = game.move('O-O-O');
+        }
+        if (!move) move = game.move({ from, to, promotion: 'q' });
+        return move;
+      }
+
+      function onSquareClick(sq) {
+        if (selectedSquare) {
+          const move = tryMove(selectedSquare, sq);
+          if (move) {
+            lastMove = { from: move.from, to: move.to, san: move.san };
+            // Add move to history
+            moveHistory.push(move.san);
+            updateMoveHistory();
+            
+            selectedSquare = null; clearHighlights(); drawBoard(); updateStatus(); startTimerIfNeeded(); 
+            playMoveSound(move);
+            // Announce the move
+            announceMove(move, move.color);
+            
+            // If AI is on and game not over, let AI respond
+            if (aiMode && !game.game_over()) {
+              // small delay so UI updates & sound plays
+              setTimeout(() => { if (!game.game_over()) aiMove(); }, 400);
+            }
+            
+            // Update statistics if game ended
+            if (game.game_over()) {
+              if (game.in_checkmate()) {
+                if (game.turn() === 'w') {
+                  statistics.wins.black++;
+                } else {
+                  statistics.wins.white++;
+                }
+              } else if (game.in_draw() || game.in_stalemate()) {
+                statistics.wins.draws++;
+              }
+              statistics.gamesPlayed++;
+              updateStatistics();
+            }
+          } else { 
+            selectedSquare = null; 
+            clearHighlights(); 
+            speak(languages[currentLanguage].invalidMove);
+          }
+        } else {
+          const moves = game.moves({ square: sq, verbose: true });
+          if (moves.length > 0) { 
+            selectedSquare = sq; 
+            highlightMoves(moves.map(m => m.to)); 
+            const piece = game.get(sq);
+            speak(`${languages[currentLanguage].pieceNames[piece.type]} selected. ${moves.length} possible moves.`);
+          }
+        }
+      }
+
+      function updateStatus(msg = null) {
+        const lang = languages[currentLanguage];
+        if (msg) { statusEl.textContent = `${lang.status}: ${msg}`; return; }
+        if (game.in_checkmate()) { 
+          statusEl.textContent = `${lang.status}: ${lang.checkmate} — ${(game.turn() === 'w' ? lang.black : lang.white)} ${lang.wins}!`; 
+          stopTimer(); 
+        }
+        else if (game.in_stalemate() || game.in_draw()) { 
+          statusEl.textContent = `${lang.status}: ${lang.draw}`; 
+          stopTimer(); 
+        }
+        else { 
+          statusEl.textContent = `${lang.status}: ${lang.turn}: ${(game.turn() === 'w' ? lang.white : lang.black)}`; 
+        }
+      }
+
+      // ----------------- AI (MINIMAX + ALPHA-BETA) -----------------
+      const pieceValues = { p: 1, n: 3, b: 3, r: 5, q: 9, k: 0 };
+
+      function evaluateBoard(board) {
+        // Simple material evaluation. Positive => White advantage.
+        let total = 0;
+        for (let row of board) {
+          for (let cell of row) {
+            if (cell) {
+              const val = pieceValues[cell.type] || 0;
+              total += (cell.color === 'w') ? val : -val;
+            }
+          }
+        }
+        return total;
+      }
+
+      function minimax(depth, isMaximizing, alpha, beta) {
+        if (depth === 0 || game.game_over()) {
+          return evaluateBoard(game.board());
+        }
+
+        const moves = game.moves();
+        if (isMaximizing) {
+          let maxEval = -Infinity;
+          for (let move of moves) {
+            game.move(move);
+            const eval = minimax(depth - 1, false, alpha, beta);
+            game.undo();
+            if (eval > maxEval) maxEval = eval;
+            if (eval > alpha) alpha = eval;
+            if (beta <= alpha) break; // alpha-beta prune
+          }
+          return maxEval;
+        } else {
+          let minEval = Infinity;
+          for (let move of moves) {
+            game.move(move);
+            const eval = minimax(depth - 1, true, alpha, beta);
+            game.undo();
+            if (eval < minEval) minEval = eval;
+            if (eval < beta) beta = eval;
+            if (beta <= alpha) break; // prune
+          }
+          return minEval;
+        }
+      }
+
+      function getBestMove(depth) {
+        const moves = game.moves();
+        if (moves.length === 0) return null;
+
+        let bestMove = null;
+        // If it's White's turn maximize; if Black's turn minimize
+        if (game.turn() === 'w') {
+          let bestValue = -Infinity;
+          for (let move of moves) {
+            game.move(move);
+            const value = minimax(depth - 1, false, -Infinity, Infinity);
+            game.undo();
+            if (value > bestValue) { bestValue = value; bestMove = move; }
+          }
+        } else {
+          let bestValue = Infinity;
+          for (let move of moves) {
+            game.move(move);
+            const value = minimax(depth - 1, true, -Infinity, Infinity);
+            game.undo();
+            if (value < bestValue) { bestValue = value; bestMove = move; }
+          }
+        }
+        return bestMove;
+      }
+
+      function aiMove() {
+        if (game.game_over()) return;
+        const depth = currentAILevel.depth;
+        const best = getBestMove(depth);
+        if (!best) return;
+        const move = game.move(best);
+        if (move) {
+          lastMove = { from: move.from, to: move.to, san: move.san };
+          // Add AI move to history
+          moveHistory.push(move.san);
+          updateMoveHistory();
+          
+          drawBoard();
+          updateStatus();
+          playMoveSound(move);
+          // Announce AI move
+          announceMove(move, move.color);
+        }
+      }
+
+      // ----------------- POSITION ANALYSIS -----------------
+      function analyzePosition() {
+        const lang = languages[currentLanguage];
+        const moves = game.moves({verbose: true});
+        const material = evaluateBoard(game.board());
+        
+        // Count developed pieces (knights and bishops moved from starting position)
+        let developedPieces = 0;
+        const board = game.board();
+        for (let r = 0; r < 8; r++) {
+          for (let f = 0; f < 8; f++) {
+            const piece = board[r][f];
+            if (piece && (piece.type === 'n' || piece.type === 'b')) {
+              // Check if piece is not on its starting square
+              if (piece.color === 'w') {
+                if (piece.type === 'n' && !((r === 7 && f === 1) || (r === 7 && f === 6))) developedPieces++;
+                if (piece.type === 'b' && !((r === 7 && f === 2) || (r === 7 && f === 5))) developedPieces++;
+              } else {
+                if (piece.type === 'n' && !((r === 0 && f === 1) || (r === 0 && f === 6))) developedPieces++;
+                if (piece.type === 'b' && !((r === 0 && f === 2) || (r === 0 && f === 5))) developedPieces++;
+              }
+            }
+          }
+        }
+        
+        // Find threats (pieces that can be captured)
+        const threats = [];
+        moves.forEach(move => {
+          if (move.captured) {
+            threats.push(`${lang.pieceNames[move.piece]} can capture ${lang.pieceNames[move.captured]} on ${move.to}`);
+          }
+        });
+        
+        let analysis = `Position analysis: `;
+        analysis += `${Math.abs(material)} material advantage ${material > 0 ? 'for white' : 'for black'}. `;
+        analysis += `${moves.length} legal moves available. `;
+        analysis += `${developedPieces} pieces developed. `;
+        
+        if (threats.length > 0) {
+          analysis += `Threats detected: ${threats.slice(0, 3).join(', ')}`;
+        }
+        
+        speak(analysis);
+      }
+
+      // ----------------- STATISTICS -----------------
+      function updateStatistics() {
+        localStorage.setItem('chessGamesPlayed', statistics.gamesPlayed);
+        localStorage.setItem('chessWins', JSON.stringify(statistics.wins));
+        localStorage.setItem('chessBestMoves', JSON.stringify(statistics.bestMoves));
+      }
+      
+      function speakStatistics() {
+        const lang = languages[currentLanguage];
+        const totalWins = statistics.wins.white + statistics.wins.black;
+        const winRate = totalWins > 0 ? ((totalWins / statistics.gamesPlayed) * 100).toFixed(1) : 0;
+        
+        let stats = `Played ${statistics.gamesPlayed} games. `;
+        stats += `Win rate: ${winRate}%. `;
+        stats += `White wins: ${statistics.wins.white}. `;
+        stats += `Black wins: ${statistics.wins.black}. `;
+        stats += `Draws: ${statistics.wins.draws}.`;
+        
+        speak(stats);
+      }
+
+      // ----------------- SAVE/LOAD GAMES -----------------
+      function saveGame() {
+        const lang = languages[currentLanguage];
+        const gameData = {
+          pgn: game.pgn(),
+          date: new Date().toISOString(),
+          moves: moveHistory,
+          whiteTime: whiteTime,
+          blackTime: blackTime,
+          turn: game.turn()
+        };
+        localStorage.setItem('chessGame', JSON.stringify(gameData));
+        speak(lang.gameSaved);
+      }
+
+      function loadGame() {
+        const lang = languages[currentLanguage];
+        const saved = localStorage.getItem('chessGame');
+        if (saved) {
+          const gameData = JSON.parse(saved);
+          game.load_pgn(gameData.pgn);
+          moveHistory = gameData.moves || [];
+          whiteTime = gameData.whiteTime || initialSeconds;
+          blackTime = gameData.blackTime || initialSeconds;
+          updateMoveHistory();
+          updateTimerText();
+          stopTimer();
+          selectedSquare = null;
+          lastMove = null;
+          drawBoard();
+          updateStatus(lang.gameLoaded);
+          speak(lang.gameLoaded);
+        } else {
+          speak(lang.noSavedGame);
+        }
+      }
+
+      // ----------------- THEMES / CONTROLS -----------------
+      const themes = {
+        classic: { bg: '#f0f0f0', panel: '#ddd', white: '#f0d9b5', black: '#b58863' },
+        dark: { bg: '#111', panel: '#0f0f0f', white: '#eee', black: '#555' },
+        neon: { bg: '#000', panel: '#111', white: '#0ff', black: '#f0f' },
+        blue: { bg: '#001f3f', panel: '#003366', white: '#cce6ff', black: '#336699' },
+        green: { bg: '#013220', panel: '#025930', white: '#a0d6b4', black: '#05652d' },
+        red: { bg: '#400000', panel: '#660000', white: '#ff9999', black: '#993333' }
+      };
+      themeSelect.addEventListener('change', () => {
+        const t = themes[themeSelect.value];
+        document.documentElement.style.setProperty('--bg', t.bg);
+        document.documentElement.style.setProperty('--panel', t.panel);
+        document.documentElement.style.setProperty('--white-square', t.white);
+        document.documentElement.style.setProperty('--black-square', t.black);
+        drawBoard();
+      });
+
+      resetBtn.addEventListener('click', () => {
+        game.reset(); lastMove = null; selectedSquare = null;
+        whiteTime = initialSeconds; blackTime = initialSeconds; stopTimer();
+        // Clear move history
+        moveHistory = [];
+        updateMoveHistory();
+        drawBoard(); 
+        updateStatus(languages[currentLanguage].ready); 
+        updateTimerText();
+      });
+
+      undoBtn.addEventListener('click', () => {
+        const m = game.undo();
+        lastMove = null;
+        // Remove last move from history
+        if (m) {
+          moveHistory.pop();
+          updateMoveHistory();
+        }
+        drawBoard();
+        updateStatus(m ? languages[currentLanguage].undidMove : languages[currentLanguage].noMoveToUndo);
+      });
+
+      tutorialBtn.addEventListener('click', () => {
+        tutorialMode = !tutorialMode; 
+        drawBoard(); 
+        updateStatus(tutorialMode ? languages[currentLanguage].tutorialOn : languages[currentLanguage].tutorialOff);
+      });
+
+      aiBtn.addEventListener('click', () => {
+        aiMode = !aiMode;
+        updateStatus(aiMode ? languages[currentLanguage].aiOn : languages[currentLanguage].aiOff);
+        // If AI turned on and it's AI's turn, make it move
+        if (aiMode && game.turn() === 'b' && !game.game_over()) {
+          setTimeout(() => { if (!game.game_over()) aiMove(); }, 300);
+        }
+      });
+
+      exploreBtn.addEventListener('click', () => {
+        exploreMode = !exploreMode;
+        drawBoard();
+        updateStatus(exploreMode ? languages[currentLanguage].exploreOn : languages[currentLanguage].exploreOff);
+        if (exploreMode) speakSquareInfo(currentSquare);
+      });
+
+      analyzeBtn.addEventListener('click', () => {
+        analyzePosition();
+      });
+
+      saveBtn.addEventListener('click', saveGame);
+      loadBtn.addEventListener('click', loadGame);
+
+      timeSelect.addEventListener('change', () => {
+        initialSeconds = parseInt(timeSelect.value, 10) || 300;
+        whiteTime = initialSeconds; blackTime = initialSeconds; updateTimerText();
+      });
+
+      difficultySelect.addEventListener('change', () => {
+        currentAILevel = aiLevels[difficultySelect.value];
+        speak(`AI level set to ${currentAILevel.name}`);
+      });
+
+      // ----------------- VOICE CONTROL -----------------
+      let recognition = null;
+      if ('webkitSpeechRecognition' in window || 'SpeechRecognition' in window) {
+        const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition;
+        recognition = new SpeechRecognition();
+        recognition.continuous = true;
+        recognition.lang = 'en-US';
+        recognition.interimResults = false;
+        recognition.maxAlternatives = 1;
+
+        recognition.onresult = (event) => {
+          const transcript = event.results[event.results.length - 1][0].transcript.trim().toLowerCase();
+          console.log("Voice:", transcript);
+
+          const lang = languages[currentLanguage];
+          
+          // Basic commands
+          if (transcript.includes('reset')) resetBtn.click();
+          else if (transcript.includes('undo')) undoBtn.click();
+          else if (transcript.includes('tutorial')) tutorialBtn.click();
+          else if (transcript.includes('ai')) aiBtn.click();
+          else if (transcript.includes('explore') || transcript.includes('exploration')) exploreBtn.click();
+          else if (transcript.includes('analyze') || transcript.includes('analysis')) analyzeBtn.click();
+          else if (transcript.includes('save')) saveBtn.click();
+          else if (transcript.includes('load')) loadBtn.click();
+          else if (transcript.includes('statistics') || transcript.includes('stats')) speakStatistics();
+
+          // Castling commands
+          else if (transcript.includes('short castle') || transcript.includes('castle kingside') || transcript.includes('castle short')) {
+            const move = game.move('O-O');
+            if (move) { 
+              lastMove = { from: move.from, to: move.to, san: move.san }; 
+              moveHistory.push(move.san);
+              updateMoveHistory();
+              drawBoard(); 
+              updateStatus(); 
+              playMoveSound(move); 
+              announceMove(move, move.color);
+              if (aiMode && !game.game_over()) setTimeout(aiMove, 400); 
+            }
+          } else if (transcript.includes('long castle') || transcript.includes('castle queenside') || transcript.includes('castle long')) {
+            const move = game.move('O-O-O');
+            if (move) { 
+              lastMove = { from: move.from, to: move.to, san: move.san }; 
+              moveHistory.push(move.san);
+              updateMoveHistory();
+              drawBoard(); 
+              updateStatus(); 
+              playMoveSound(move); 
+              announceMove(move, move.color);
+              if (aiMode && !game.game_over()) setTimeout(aiMove, 400); 
+            }
+          }
+
+          // Normal square-to-square moves (e.g., "e2 to e4" or "e2 e4")
+          else {
+            const regex = /([a-h][1-8])\s*(to|\-)?\s*([a-h][1-8])/;
+            const match = transcript.match(regex);
+            if (match) {
+              const from = match[1];
+              const to = match[3];
+              const move = tryMove(from, to);
+              if (move) {
+                lastMove = { from: move.from, to: move.to, san: move.san };
+                moveHistory.push(move.san);
+                updateMoveHistory();
+                drawBoard(); 
+                updateStatus(); 
+                startTimerIfNeeded(); 
+                playMoveSound(move);
+                announceMove(move, move.color);
+                if (aiMode && !game.game_over()) setTimeout(aiMove, 400);
+              } else {
+                speak(lang.invalidMove);
+              }
+            } else {
+              // Attempt to navigate with voice
+              if (transcript.includes('right')) navigateBoard('right');
+              else if (transcript.includes('left')) navigateBoard('left');
+              else if (transcript.includes('up')) navigateBoard('up');
+              else if (transcript.includes('down')) navigateBoard('down');
+              else if (transcript.includes('describe') || transcript.includes('what') && transcript.includes('square')) {
+                speakSquareInfo(currentSquare);
+              }
+              // Optional: attempt algebraic notation like "pawn to e4" (basic)
+              else {
+                const pawnRegex = /(pawn|knight|bishop|rook|queen|king)?\s*(to)?\s*([a-h][1-8])/;
+                const pm = transcript.match(pawnRegex);
+                if (pm) {
+                  // This is heuristic and may fail; we notify user
+                  speak("Please speak moves as 'e2 to e4' for best results.");
+                }
+              }
+            }
+          }
+        };
+
+        recognition.onerror = (e) => {
+          console.error("Speech error", e);
+        };
+
+        startBtn.addEventListener('click', () => {
+          try {
+            recognition.start();
+            statusEl.textContent = `${languages[currentLanguage].status}: ${languages[currentLanguage].voiceOn}`;
+          } catch (e) {
+            // already started
+          }
+        });
+        stopBtn.addEventListener('click', () => {
+          recognition.stop();
+          statusEl.textContent = `${languages[currentLanguage].status}: ${languages[currentLanguage].voiceOff}`;
+        });
+      } else {
+        startBtn.disabled = true; stopBtn.disabled = true;
+        statusEl.textContent = `${languages[currentLanguage].status}: Voice not supported in browser`;
+      }
+
+      // ----------------- INITIALIZE -----------------
+      document.addEventListener('keydown', handleKeyboardInput);
+      drawBoard(); 
+      updateStatus(); 
+      updateTimerText();
+      highlightCurrentSquare();
+
+      // Load statistics
+      if (localStorage.getItem('chessGamesPlayed')) {
+        statistics.gamesPlayed = parseInt(localStorage.getItem('chessGamesPlayed'));
+        statistics.wins = JSON.parse(localStorage.getItem('chessWins')) || { white: 0, black: 0, draws: 0 };
+      }
+
+      // Make sure if AI toggled on at load and it's AI's turn, it plays.
+      if (aiMode && game.turn() === 'b' && !game.game_over()) setTimeout(aiMove, 300);
+    </script>
+  </body>
+</html>
